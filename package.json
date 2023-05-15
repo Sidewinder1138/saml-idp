@@ -1,5 +1,5 @@
 {
-  "name": "saml-idp",
+  "name": "@sidewinder1138/saml-idp",
   "description": "Test Identity Provider (IdP) for SAML 2.0 Web Browser SSO Profile",
   "type": "commonjs",
   "version": "1.3",
