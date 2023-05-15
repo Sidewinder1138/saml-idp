@@ -378,7 +378,14 @@ function processArgs(args, options) {
     .wrap(baseArgv.terminalWidth());
 }
 
-function _runServer(argv) {
+function _runServer(argv, callback = null) {
+  const quiet = callback !== null; //TODO: separate quiet option?
+  function log(...args) {
+    if (!quiet) {
+      console.log(...args);
+    }
+  }
+
   const app = express();
   const httpServer = argv.https
     ? https.createServer(
@@ -388,7 +395,7 @@ function _runServer(argv) {
     : http.createServer(app);
   const blocks = {};
 
-  console.log(
+  log(
     dedent(chalk`
     Listener Port:
       {cyan ${argv.host}:${argv.port}}
@@ -479,10 +486,7 @@ function _runServer(argv) {
         try {
           declDoc = new Parser().parseFromString(argv.authnContextDecl);
         } catch (err) {
-          console.log(
-            "Unable to parse Authentication Context Declaration XML",
-            err
-          );
+          log("Unable to parse Authentication Context Declaration XML", err);
         }
         if (declDoc) {
           const authnContextDeclEl = assertionDom.createElementNS(
@@ -497,7 +501,7 @@ function _runServer(argv) {
       }
     },
     responseHandler: function (response, opts, req, res, next) {
-      console.log(
+      log(
         dedent(chalk`
                                 Sending SAML Response to {cyan ${
                                   opts.postUrl
@@ -507,7 +511,7 @@ function _runServer(argv) {
                                   {bold SAMLResponse} =>`)
       );
 
-      console.log(prettyPrintXml(response.toString(), 4));
+      log(prettyPrintXml(response.toString(), 4));
 
       res.render("samlresponse", {
         AcsUrl: opts.postUrl,
@@ -630,7 +634,7 @@ function _runServer(argv) {
           acsUrl: data.assertionConsumerServiceURL,
           forceAuthn: data.forceAuthn === "true",
         };
-        console.log("Received AuthnRequest => \n", req.authnRequest);
+        log("Received AuthnRequest => \n", req.authnRequest);
       }
       return showUser(req, res, next);
     });
@@ -660,10 +664,7 @@ function _runServer(argv) {
       });
     }
 
-    console.log(
-      "Processing SAML SLO request for participant => \n",
-      req.participant
-    );
+    log("Processing SAML SLO request for participant => \n", req.participant);
 
     return samlp.logout({
       issuer: req.idp.options.issuer,
@@ -673,7 +674,7 @@ function _runServer(argv) {
       signatureAlgorithm: req.idp.options.signatureAlgorithm,
       sessionParticipants: new SessionParticipants([req.participant]),
       clearIdPSession: function (callback) {
-        console.log(
+        log(
           "Destroying session " + req.session.id + " for participant",
           req.participant
         );
@@ -744,7 +745,7 @@ function _runServer(argv) {
     authOptions.sessionIndex = getSessionIndex(req);
 
     // Keep calm and Single Sign On
-    console.log(
+    log(
       dedent(chalk`
       Generating SAML Response using =>
         {bold User} => ${Object.entries(req.user)
@@ -789,14 +790,14 @@ function _runServer(argv) {
       if (!attributeExists) {
         req.metadata.push(attribute);
       }
-      console.log("Updated SAML Attribute Metadata => \n", req.metadata);
+      log("Updated SAML Attribute Metadata => \n", req.metadata);
       res.status(200).end();
     }
   });
 
   app.get(IDP_PATHS.SIGN_OUT, function (req, res, next) {
     if (req.idp.options.sloUrl) {
-      console.log(
+      log(
         "Initiating SAML SLO request for user: " +
           req.user.userName +
           " with sessionIndex: " +
@@ -804,7 +805,7 @@ function _runServer(argv) {
       );
       res.redirect(IDP_PATHS.SLO);
     } else {
-      console.log("SAML SLO is not enabled for SP, destroying IDP session");
+      log("SAML SLO is not enabled for SP, destroying IDP session");
       req.session.destroy(function (err) {
         if (err) {
           throw err;
@@ -843,7 +844,7 @@ function _runServer(argv) {
       }
     });
 
-    console.log("Updated IdP Configuration => \n", req.idp.options);
+    log("Updated IdP Configuration => \n", req.idp.options);
     res.redirect("/");
   });
 
@@ -869,7 +870,7 @@ function _runServer(argv) {
    * Start IdP Web Server
    */
 
-  console.log(
+  log(
     chalk`Starting IdP server on port {cyan ${app.get("host")}:${app.get(
       "port"
     )}}...\n`
@@ -883,7 +884,7 @@ function _runServer(argv) {
         : "localhost",
       baseUrl = `${scheme}://${hostname}:${port}`;
 
-    console.log(
+    log(
       dedent(chalk`
       IdP Metadata URL:
         {cyan ${baseUrl}${IDP_PATHS.METADATA}}
@@ -908,13 +909,16 @@ function _runServer(argv) {
         {cyan ${baseUrl}}
     `)
     );
+
+    if (callback !== null) {
+      callback(httpServer);
+    }
   });
-  return httpServer;
 }
 
-function runServer(options) {
+function runServer(options, callback = null) {
   const args = processArgs([], options);
-  return _runServer(args.argv);
+  _runServer(args.argv, callback);
 }
 
 function main() {
