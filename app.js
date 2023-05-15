@@ -575,16 +575,21 @@ function _runServer(argv, callback = null) {
    * Middleware
    */
 
-  app.use(
-    logger(":date> :method :url - {:referrer} => :status (:response-time ms)", {
-      skip: function (req, res) {
-        return (
-          req.path.startsWith("/bower_components") ||
-          req.path.startsWith("/css")
-        );
-      },
-    })
-  );
+  if (!quiet) {
+    app.use(
+      logger(
+        ":date> :method :url - {:referrer} => :status (:response-time ms)",
+        {
+          skip: function (req, res) {
+            return (
+              req.path.startsWith("/bower_components") ||
+              req.path.startsWith("/css")
+            );
+          },
+        }
+      )
+    );
+  }
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(express.static(path.join(__dirname, "public")));
   app.use(
