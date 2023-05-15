@@ -8,15 +8,16 @@
   "keywords": [
     "saml",
     "idp",
-    "okta"
+    "okta",
+    "test"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mcguinness/saml-idp"
+    "url": "https://github.com/Sidewinder1138/saml-idp"
   },
   "bugs": {
-    "url": "https://github.com/mcguinness/saml-idp/issues"
+    "url": "https://github.com/Sidewinder1138/saml-idp/issues"
   },
   "main": "./app.js",
   "scripts": {
